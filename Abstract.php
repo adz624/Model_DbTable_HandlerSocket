@@ -1,6 +1,9 @@
 <?php
 abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstract
 {
+	const FETCH_ALL = 0;
+	const FETCH_ROW = 1;
+	
 	const INDEX_PRIMARY = 'PRIMARY';
 	
 	private $dbName = '';
@@ -14,8 +17,8 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	 * 當被繼承時, 設定handlersocket adapter
 	 *
 	 * @author eddie
-	 * @uses eddie
-	 * @version 0.05 2012-07-11
+	 * @return void
+	 * @version 0.06 2012-07-11
 	 */
 	public function __construct()
 	{
@@ -28,8 +31,7 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	 *
 	 * @return array
 	 * @author eddie
-	 * @uses eddie
-	 * @version 0.05 2012-07-11
+	 * @version 0.06 2012-07-11
 	 */
 	public function getIndexes()
 	{
@@ -49,8 +51,8 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	 * 設定 Handlersocket Adapter
 	 *
 	 * @author eddie
-	 * @uses eddie
-	 * @version 0.05 2012-07-11
+	 * @return void
+	 * @version 0.06 2012-07-11
 	 */
 	private function _setHandlerAdapter()
 	{
@@ -63,10 +65,10 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	
 	/**
 	 * 取得 Handlersocket Adapter
+	 * 
 	 * @return Model_DbTable_HandlerSocket_Adapter
 	 * @author eddie
-	 * @uses eddie
-	 * @version 0.05 2012-07-11
+	 * @version 0.06 2012-07-11
 	 */
 	private function _getHandlerAdapter()
 	{
@@ -78,10 +80,10 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	
 	/**
 	 * 取得 Handlersocket Adapter
+	 * 
 	 * @return HandlerSocket原生Conenction
 	 * @author eddie
-	 * @uses eddie
-	 * @version 0.05 2012-07-11
+	 * @version 0.06 2012-07-11
 	 */
 	private function _getConnection()
 	{
@@ -97,8 +99,7 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	 *
 	 * @return Model
 	 * @author eddie
-	 * @uses eddie
-	 * @version 0.05 2012-07-11
+	 * @version 0.06 2012-07-11
 	 */
 	public static function getInstance()
 	{
@@ -109,7 +110,13 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 		return self::$_instance[$modelName];
 	}
 	
-	
+	/**
+	 * 取得索引資料
+	 *
+	 * @return array ($indexId, $filterColumns)
+	 * @author eddie
+	 * @version 0.06 2012-07-11
+	 */
 	public function getIndexData ($indexName, $columns, $filters)
 	{
 		$indexKeyName = "INDEX_{$this->_name}_{$indexName}";
@@ -117,22 +124,38 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 			$this->_getHandlerAdapter()->prepare();
 			$indexId = count(self::$_opendIndexes) + 1;
 			if (!$this->_getConnection()->openIndex($indexId, $this->dbName, $this->_name, $indexName, implode(',', $columns), $filters)) {
-				throw new Exception( $this->_getConnection()->getError());
+				throw new Exception( 'Get Index Error');
 			}
-			self::$_opendIndexes[$indexKeyName] = array('indexId' => $indexId, 'filters' => $filters);
+			self::$_opendIndexes[$indexKeyName] = array('indexId' => $indexId, 'filters' => $filters, 'columns' => $columns);
 		}	
 		
 		return self::$_opendIndexes[$indexKeyName];
 	}
 	
 	
-	
-	public function handlerSelect($indexId)
+	/**
+	 * 取得索引資料
+	 *
+	 * @param array $openIndex
+	 * @return Model_DbTable_HandlerSocket_Select
+	 * @author eddie
+	 * @version 0.06 2012-07-11
+	 */
+	public function handlerSelect($openIndex)
 	{
-		return new Model_DbTable_HandlerSocket_SelectParser($indexId);
+		return new Model_DbTable_HandlerSocket_Select($openIndex);
 	}
 	
-	public function handlerFetch($select)
+	/**
+	 * 將資料送進Query
+	 *
+	 * @param Model_DbTable_HandlerSocket_Select 
+	 * @param fetchMode
+	 * @return Model_DbTable_HandlerSocket_RowSet || Model_DbTable_HandlerSocket_Row
+	 * @author eddie
+	 * @version 0.06 2012-07-11
+	 */
+	private function _handlerFetch($select, $fetchMode)
 	{
 		$query = $select->getSelect();
 		
@@ -141,8 +164,9 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 		} else {
 			$filters = $query['filters'];
 		}
+		
 		if (count($query['inValues']) === 0) {
-			return $this->_getConnection()->executeSingle(
+			$data = $this->_getConnection()->executeSingle(
 					$query['indexId'],
 					$query['operate'],
 					$query['values'],
@@ -153,7 +177,7 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 					$filters
 			);
 		} else {
-			return $this->_getConnection()->executeSingle(
+			$data = $this->_getConnection()->executeSingle(
 					$query['indexId'],
 					$query['operate'],
 					$query['values'],
@@ -167,13 +191,56 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 			);
 		}
 		
+		if (count($data) === 0) {
+			return false;
+		}
 		
+		$columnsMapping = $this->_getColumnMapping($select->getColumns());
+		if ($fetchMode === self::FETCH_ALL) {
+			return new Model_DbTable_HandlerSocket_RowSet($columnsMapping, $data);
+		} else if ($fetchMode === self::FETCH_ROW) {
+			return new Model_DbTable_HandlerSocket_Row($columnsMapping, $data[0]);
+		} else {
+			throw new Exception('Incorrent fetch mode');
+		}
 	}
 	
 	
 	/**
-	 *  $query = $this->handlerSelect()->index(MODEL:INDEX_PRIMARY)->values(10)->
-	 *  $this->handlerFetch($query);
-	 * 
+	 * 將資料送進Query, 取得多筆
+	 *
+	 * @param Model_DbTable_HandlerSocket_Select
+	 * @return Model_DbTable_HandlerSocket_RowSet
+	 * @author eddie
+	 * @version 0.06 2012-07-13
 	 */
+	public function handlerFetchAll($select)
+	{
+		return $this->_handlerFetch($select, self::FETCH_ALL);
+	}
+	
+	/**
+	 * 將資料送進Query, 取得單筆
+	 *
+	 * @param Model_DbTable_HandlerSocket_Select
+	 * @return Model_DbTable_HandlerSocket_Row
+	 * @author eddie
+	 * @version 0.06 2012-07-13
+	 */
+	public function handlerFetchRow($select)
+	{
+		return $this->_handlerFetch($select, self::FETCH_ROW);
+	}
+	
+	
+	private function _getColumnMapping($columns)
+	{
+		$columnsMapping = array();
+		$i = 0;
+		foreach ($columns as $column) {
+			$columnsMapping[$column] = $i;
+			$i++;
+		}
+		return $columnsMapping;
+	}
 }

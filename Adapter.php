@@ -42,13 +42,23 @@ class Model_DbTable_HandlerSocket_Adapter
 	public function getConnect()
 	{
 		if (self::$connection === null) {
-			self::$connection = new HandlerSocket(self::$config['host'], self::PORT);
+			try {
+				self::$connection = new HandlerSocket(self::$config['host'], self::PORT);
+			} catch (HandlerSocketException $e) {
+				throw new Exception($e->getMessage());
+			}
 		}
 		return self::$connection;
 	}
 	
 
-	
+	/**
+	 * 準備連線需要的資源 (連線, 認證)
+	 *
+	 * @return void
+	 * @author eddie
+	 * @version 0.06 2012-07-11
+	 */
 	public function prepare()
 	{
 		if (self::$config) {
