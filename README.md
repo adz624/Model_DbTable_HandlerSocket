@@ -57,7 +57,7 @@ In your controller
 
 Fetch mode
 ----------
-    $this->handlerFetchAll($select)
+    <?php $this->handlerFetchAll($select); ?>
 it will return the row set object Model_DbTable_HandlerSocket_RowSet()
 
     $this->handlerFetchRow
