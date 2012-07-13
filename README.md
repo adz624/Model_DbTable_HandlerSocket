@@ -39,7 +39,7 @@ Create a DbTable model
                 $columns = array('column1', 'column2');
             // will search columns except index key
                 $filters = array('column3', 'column4')
-                $opneIndex = $this->getIndexData(self::INDEX_SUPORT, $columns, $filters);
+                $opneIndex = $this->getIndexData(self::INDEX_KEY1, $columns, $filters);
 
                 $query = $this->handlerSelect($opneIndex)->eq((int)$supplierID)->limit(100);
                 return $this->handlerFetchAll($query);
