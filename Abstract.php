@@ -3,7 +3,7 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 {
 	const FETCH_ALL = 0;
 	const FETCH_ROW = 1;
-	
+
 	const INDEX_PRIMARY = 'PRIMARY';
 	
 	private $dbName = '';
@@ -232,7 +232,14 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 		return $this->_handlerFetch($select, self::FETCH_ROW);
 	}
 	
-	
+	/**
+	 * 回傳給RowSet使用的Columns mapping
+	 *
+	 * @param Model_DbTable_HandlerSocket_Select
+	 * @return array
+	 * @author eddie
+	 * @version 0.06 2012-07-13
+	 */
 	private function _getColumnMapping($columns)
 	{
 		$columnsMapping = array();

@@ -41,4 +41,6 @@ class Model_DbTable_HandlerSocket_Row
 		}
 		var_dump($data);
 	}
+	
+	public function sort(){ return $this; }
 }

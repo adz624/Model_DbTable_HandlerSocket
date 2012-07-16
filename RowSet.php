@@ -1,10 +1,14 @@
 <?php
 class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 {
+	const SORT_ASC = 0;
+	const SORT_DESC = 1;
+	
 	private $_position = 0;
 	private $_data = array();
 	private $_count = 0;
 	private $_columnsMapping  = array();
+	
 	
 	public function __construct($columns, $data)
 	{
@@ -70,7 +74,7 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	 * Required by interface Iterator.
 	 *
 	 * @author eddie
-	 * @return Zend_Db_Table_Rowset_Abstract Fluent interface.
+	 * @return self
 	 * @version 0.06 2012-07-13
 	 */
 	public function rewind()
@@ -140,7 +144,7 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	 *
 	 * @param int $position Row array的index
 	 * @author eddie
-	 * @return Model_DbTable_HandlerSocket_RowSet
+	 * @return self
 	 * @version 0.06 2012-07-13
 	 */
 	public function seek($position)
@@ -157,11 +161,43 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	 * 此RowSet的資料筆數
 	 *
 	 * @author eddie
-	 * @return void
+	 * @return int 筆數
 	 * @version 0.06 2012-07-13
 	 */
 	public function count()
 	{
 		return count($this->_count);
+	}
+	
+	/**
+	 * 排序已query出的資料
+	 *
+	 * @author eddie
+	 * @return self
+	 * @version 0.06 2012-07-16
+	 */
+	public function sort($column, $by = self::SORT_ASC)
+	{
+		if (!isset($this->_columnsMapping[$column])) {
+			// mapping不到key時
+			throw new Exception("Not found key '{$column}'");
+		}
+		
+		// 取得 $_data與column mapping後的position
+		$columnPosition = $this->_columnsMapping[$column];
+		
+		// 使用 user-defind function 做sort
+		if ($by === self::SORT_ASC) {
+			usort($this->_data, function ($a, $b) use ($columnPosition){
+				if ($a[$columnPosition] === $b[$columnPosition]) { return 0; }
+				return $a[$columnPosition] > $b[$columnPosition] ? 1 : -1;
+			});
+		} else {
+			usort($this->_data, function ($a, $b) use ($columnPosition){
+				if ($a[$columnPosition] === $b[$columnPosition]) { return 0; }
+				return $a[$columnPosition] > $b[$columnPosition] ? -1 : 1;
+			});
+		}
+		return $this;
 	}
 }
