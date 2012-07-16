@@ -130,4 +130,6 @@ Return the rows count
     $result = $this->handlerFetchAll($select);
     $count = $result->count();
 
+Sort data
 
+    $this->handlerFetchAll($query)->sort('CategoryID', Model_DbTable_HandlerSocket_RowSet::SORT_ASC);
