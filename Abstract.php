@@ -3,7 +3,8 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 {
 	const FETCH_ALL = 0;
 	const FETCH_ROW = 1;
-
+	const FETCH_ASSOC = 2;
+	
 	const INDEX_PRIMARY = 'PRIMARY';
 	
 	private $dbName = '';
@@ -196,6 +197,14 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 		}
 		
 		$columnsMapping = $this->_getColumnMapping($select->getColumns());
+		if ($fetchMode === self::FETCH_ASSOC) {
+			$result = array();
+			foreach ($data as $value) {
+				$result[$value[0]] = $value;
+			}
+			$data = $result;
+			$fetchMode = self::FETCH_ALL;
+		}
 		if ($fetchMode === self::FETCH_ALL) {
 			return new Model_DbTable_HandlerSocket_RowSet($columnsMapping, $data);
 		} else if ($fetchMode === self::FETCH_ROW) {
@@ -217,6 +226,19 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	public function handlerFetchAll($select)
 	{
 		return $this->_handlerFetch($select, self::FETCH_ALL);
+	}
+	
+	/**
+	 * 將資料送進Query, 取得多筆, 以第0個column當陣列元素
+	 *
+	 * @param Model_DbTable_HandlerSocket_Select
+	 * @return Model_DbTable_HandlerSocket_RowSet
+	 * @author eddie
+	 * @version 0.06 2012-07-17
+	 */
+	public function handlerFetchAssoc($select)
+	{
+		return $this->_handlerFetch($select, self::FETCH_ASSOC);
 	}
 	
 	/**
