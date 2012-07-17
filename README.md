@@ -68,10 +68,13 @@ In your controller
 Fetch mode
 ----------
     <?php $this->handlerFetchAll($select); ?>
-it will return the row set object Model_DbTable_HandlerSocket_RowSet()
+it will return the row set object (Model_DbTable_HandlerSocket_RowSet)
 
     <?php $this->handlerFetchRow($select); ?>
 it will return the row object (Model_DbTable_HandlerSocket_Row)
+
+    <?php $this->handlerFetchAssoc($select); ?>
+it will use the first column which you do select to be the key of result (Model_DbTable_HandlerSocket_RowSet)
 
 Model_DbTable_HandlerSocket_Abstract 
 ---------
