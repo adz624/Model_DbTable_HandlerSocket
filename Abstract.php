@@ -203,9 +203,8 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 				$result[$value[0]] = $value;
 			}
 			$data = $result;
-			$fetchMode = self::FETCH_ALL;
-		}
-		if ($fetchMode === self::FETCH_ALL) {
+			return new Model_DbTable_HandlerSocket_RowSet($columnsMapping, $data, true);
+		} else if ($fetchMode === self::FETCH_ALL) {
 			return new Model_DbTable_HandlerSocket_RowSet($columnsMapping, $data);
 		} else if ($fetchMode === self::FETCH_ROW) {
 			return new Model_DbTable_HandlerSocket_Row($columnsMapping, $data[0]);

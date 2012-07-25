@@ -8,13 +8,20 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	private $_data = array();
 	private $_count = 0;
 	private $_columnsMapping  = array();
+	private $_rowKeyMapping = array();
+	private $_assocMode = array();
 	
-	
-	public function __construct($columns, $data)
+	public function __construct($columns, $data, $assocMode = false )
 	{
 		$this->_data = $data;
 		$this->_columnsMapping = $columns;
 		$this->_count = count($data);
+		
+		/* 若非assoc mode減少使用過多mapping功能 */
+		$this->_assocMode = $assocMode;
+		if ($assocMode) {
+			$this->_rowKeyMapping = array_keys($data);
+		}
 	}
 	
 	/**
@@ -62,11 +69,32 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	 */
 	private function _getRow($rowIndex)
 	{
-		if (!isset($this->_data[$rowIndex])) {
+	    /* 若為 assoc mode 由 key array取值 */
+	    if ($this->_assocMode) {
+	    	$position = $this->_rowKeyMapping[$rowIndex];
+	    } else {
+	        $position = $rowIndex;
+	    }
+	    if (!isset($this->_data[$position])) {
 			return false;
 		}
-		$data = $this->_data[$rowIndex];
+		$data = $this->_data[$position];
 		return new Model_DbTable_HandlerSocket_Row($this->_columnsMapping, $data);
+	}
+	
+	/**
+	 * 由 row key 取得array
+	 *
+	 * @return array
+	 * @author eddie
+	 * @version 0.06 2012-07-13
+	 */
+	public function getRow($position)
+	{
+	    if (!isset($this->_data[$position])) {
+	        return new Model_DbTable_HandlerSocket_Row(array(), array());
+	    } 
+	    return new Model_DbTable_HandlerSocket_Row($this->_columnsMapping, $this->_data[$position]);
 	}
 	
 	/**
@@ -170,13 +198,13 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	}
 	
 	/**
-	 * 排序已query出的資料
+	 * 排序 assoc mode query出的資料
 	 *
 	 * @author eddie
-	 * @return self
+	 * @return void
 	 * @version 0.06 2012-07-16
 	 */
-	public function sort($column, $by = self::SORT_ASC)
+	public function _sortAssocArray($column, $by = self::SORT_ASC)
 	{
 		if (!isset($this->_columnsMapping[$column])) {
 			// mapping不到key時
@@ -185,7 +213,37 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 		
 		// 取得 $_data與column mapping後的position
 		$columnPosition = $this->_columnsMapping[$column];
-		
+		// 使用 user-defind function 做sort
+		if ($by === self::SORT_ASC) {
+			uasort($this->_data, function ($a, $b) use ($columnPosition){ 
+				if ($a[$columnPosition] === $b[$columnPosition]) { return 0; }
+				return $a[$columnPosition] > $b[$columnPosition] ? 1 : -1;
+			});
+		} else {
+			uasort($this->_data, function ($a, $b) use ($columnPosition){
+				if ($a[$columnPosition] === $b[$columnPosition]) { return 0; }
+				return $a[$columnPosition] < $b[$columnPosition] ? 1 : -1;
+			});
+		}
+		$this->_rowKeyMapping = array_keys($this->_data);
+	}
+	
+	/**
+	 * 排序非 assoc mode query出的資料
+	 *
+	 * @author eddie
+	 * @return void
+	 * @version 0.06 2012-07-25
+	 */
+	public function _sortNormalArray($column, $by = self::SORT_ASC)
+	{
+		if (!isset($this->_columnsMapping[$column])) {
+			// mapping不到key時
+			throw new Exception("Not found key '{$column}'");
+		}
+	
+		// 取得 $_data與column mapping後的position
+		$columnPosition = $this->_columnsMapping[$column];
 		// 使用 user-defind function 做sort
 		if ($by === self::SORT_ASC) {
 			usort($this->_data, function ($a, $b) use ($columnPosition){
@@ -195,9 +253,27 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 		} else {
 			usort($this->_data, function ($a, $b) use ($columnPosition){
 				if ($a[$columnPosition] === $b[$columnPosition]) { return 0; }
-				return $a[$columnPosition] > $b[$columnPosition] ? -1 : 1;
+				return $a[$columnPosition] < $b[$columnPosition] ? 1 : -1;
 			});
 		}
 		return $this;
+	}
+	
+	
+	/**
+	 * 排序$_data資料
+	 *
+	 * @author eddie
+	 * @return self
+	 * @version 0.06 2012-07-25
+	 */
+	public function sort($column, $by = self::SORT_ASC)
+	{
+	    if ($this->_assocMode) {
+	        $this->_sortAssocArray($column, $by);
+	    } else {
+	        $this->_sortNormalArray($column, $by);
+	    }
+	    return $this;
 	}
 }
