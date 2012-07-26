@@ -194,7 +194,7 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	 */
 	public function count()
 	{
-		return count($this->_count);
+		return $this->_count;
 	}
 	
 	/**
