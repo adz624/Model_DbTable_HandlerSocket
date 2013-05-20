@@ -163,6 +163,6 @@ Contact
 ----------
 
 Eddie Lee   
-Mail: afunction@Kimo.com   
+Mail: eddie@visionbundles.com   
 Facebook: http://www.facebook.com/latebird.ticket  
 
