@@ -10,7 +10,6 @@ class Model_DbTable_HandlerSocket_Adapter
 	
 	static $config = array();
 	
-	
 	public function __construct($config)
 	{
 		self::$config = $config;
@@ -25,11 +24,14 @@ class Model_DbTable_HandlerSocket_Adapter
 	 */
 	private function _auth()
 	{
-		self::$authStatus = self::$connection->auth(self::$config['handlersocketPassword']);
-		if (!self::$authStatus) {
-			throw new Exception('Auth Faild');
+		if (self::$authStatus) {
+			return self::$authStatus;
 		}
-		return self::$authStatus;
+		if (self::$connection->auth(self::$config['handlersocketPassword'])) {
+			self::$authStatus = true;
+			return self::$authStatus;
+		}
+		throw new Exception('Auth Faild');
 	}
 		
 	/**

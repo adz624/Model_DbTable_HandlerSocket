@@ -120,7 +120,7 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 	 */
 	public function getIndexData ($indexName, $columns, $filters)
 	{
-		$indexKeyName = "INDEX_{$this->_name}_{$indexName}";
+		$indexKeyName = "INDEX_{$this->_name}_{$indexName}_".implode('_', $columns);
 		if (!isset(self::$_opendIndexes[$indexKeyName])) {
 			$this->_getHandlerAdapter()->prepare();
 			$indexId = count(self::$_opendIndexes) + 1;
@@ -191,11 +191,9 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 					$query['inValues']
 			);
 		}
-		
-		if (count($data) === 0) {
+		if (is_bool($data) || count($data) === 0) {
 			return false;
 		}
-		
 		$columnsMapping = $this->_getColumnMapping($select->getColumns());
 		if ($fetchMode === self::FETCH_ASSOC) {
 			$result = array();
@@ -207,6 +205,7 @@ abstract class Model_DbTable_HandlerSocket_Abstract extends Zend_Db_Table_Abstra
 		} else if ($fetchMode === self::FETCH_ALL) {
 			return new Model_DbTable_HandlerSocket_RowSet($columnsMapping, $data);
 		} else if ($fetchMode === self::FETCH_ROW) {
+			
 			return new Model_DbTable_HandlerSocket_Row($columnsMapping, $data[0]);
 		} else {
 			throw new Exception('Incorrent fetch mode');

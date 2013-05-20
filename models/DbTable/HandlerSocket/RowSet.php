@@ -10,7 +10,8 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	private $_columnsMapping  = array();
 	private $_rowKeyMapping = array();
 	private $_assocMode = array();
-	
+	private $_keylist = array();
+	 
 	public function __construct($columns, $data, $assocMode = false )
 	{
 		$this->_data = $data;
@@ -275,5 +276,24 @@ class Model_DbTable_HandlerSocket_RowSet implements SeekableIterator, Countable
 	        $this->_sortNormalArray($column, $by);
 	    }
 	    return $this;
+	}
+	
+	/**
+	 * 取出陣列的key list
+	 *
+	 * @return array
+	 * @author eddie
+	 * @version 0.06 2012-07-26
+	 */
+	public function getKeys()
+	{
+		if ($this->_assocMode) {
+			return $this->_rowKeyMapping;
+		}
+		if (count($this->_keylist) > 0) {
+			return $this->_keylist;
+		}
+		$this->_keylist = array_keys($this->_data);
+		return $this->_keylist;
 	}
 }
